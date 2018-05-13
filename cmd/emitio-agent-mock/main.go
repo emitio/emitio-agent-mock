@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/emitio/emitio-mock/pkg/emitio"
+	"github.com/emitio/emitio-agent-mock/pkg/emitio"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
