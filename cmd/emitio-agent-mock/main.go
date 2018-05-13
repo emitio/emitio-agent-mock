@@ -29,8 +29,9 @@ func (s *server) Emit(stream emitio.EmitIO_EmitServer) error {
 	if name == "" {
 		return errors.New("forwarder must specify name")
 	}
+	zap.L().With(zap.String("name", name)).Info("new stream")
 	defer func() {
-		fmt.Printf("name=%s has gone away\n", name)
+		zap.L().With(zap.String("name", name)).Info("stream has gone away")
 	}()
 	for {
 		i, err := stream.Recv()
@@ -43,30 +44,23 @@ func (s *server) Emit(stream emitio.EmitIO_EmitServer) error {
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
-	beforeExit := func() {}
-	defer beforeExit()
 	term := make(chan os.Signal, 1)
 	signal.Notify(term, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-term
 		cancel()
 		<-term
-		beforeExit()
 		os.Exit(1)
 	}()
 	l, _ := zap.NewDevelopment()
 	zap.ReplaceGlobals(l)
 	const (
-		network = "unix"
-		address = "/var/run/emitio/emitio.sock"
+		network = "tcp"
+		address = "127.0.0.1:3648"
 	)
 	lis, err := net.Listen(network, address)
 	if err != nil {
-		beforeExit()
 		zap.L().With(zap.Error(err)).Fatal("listening")
-	}
-	beforeExit = func() {
-		os.Remove(address)
 	}
 	srv := grpc.NewServer()
 	emitio.RegisterEmitIOServer(srv, &server{})
@@ -76,7 +70,6 @@ func main() {
 	}()
 	err = srv.Serve(lis)
 	if err != nil {
-		beforeExit()
 		zap.L().With(zap.Error(err)).Fatal("serving")
 	}
 }
