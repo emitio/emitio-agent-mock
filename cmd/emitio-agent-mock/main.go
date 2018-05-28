@@ -2,44 +2,23 @@ package main
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/emitio/emitio-agent-mock/pkg/emitio"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+
+	"github.com/davecgh/go-spew/spew"
+	"github.com/emitio/emitio-agent-mock/pkg/emitio/v1"
 )
 
 type server struct{}
 
-func (s *server) Emit(stream emitio.EmitIO_EmitServer) error {
-	i, err := stream.Recv()
-	if err != nil {
-		return err
-	}
-	h, ok := i.Inputs.(*emitio.EmitInput_Header)
-	if !ok {
-		return errors.New("first message must be header")
-	}
-	name := h.Header.Name
-	if name == "" {
-		return errors.New("forwarder must specify name")
-	}
-	zap.L().With(zap.String("name", name)).Info("new stream")
-	defer func() {
-		zap.L().With(zap.String("name", name)).Info("stream has gone away")
-	}()
-	for {
-		i, err := stream.Recv()
-		if err != nil {
-			return err
-		}
-		fmt.Printf("name=%s recv=%+v\n", name, i)
-	}
+func (s *server) Emit(ctx context.Context, req *emitio.EmitRequest) (*emitio.EmitResponse, error) {
+	spew.Dump(req)
+	return &emitio.EmitResponse{}, nil
 }
 
 func main() {
